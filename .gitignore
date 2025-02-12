@@ -9,3 +9,6 @@ terraform.tfvars
 # Log files
 crash.log
 
+# Keypair files
+*.pem
+*.ppk
