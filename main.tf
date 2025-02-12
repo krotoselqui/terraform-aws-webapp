@@ -92,6 +92,13 @@ resource "aws_instance" "web_server" {
 
               # S3バケットからindex.htmlを取得してnginxのドキュメントルートに配置
               aws s3 cp s3://${aws_s3_bucket.app_bucket.id}/index.html /usr/share/nginx/html/index.html
+              aws s3 cp s3://${aws_s3_bucket.app_bucket.id}/calculator.js /usr/share/nginx/html/calculator.js
+
+              # ファイルの権限を設定
+              sudo chown nginx:nginx /usr/share/nginx/html/index.html
+              sudo chown nginx:nginx /usr/share/nginx/html/calculator.js
+              sudo chmod 644 /usr/share/nginx/html/index.html
+              sudo chmod 644 /usr/share/nginx/html/calculator.js
 
               # Nginxの再起動
               sudo systemctl restart nginx
