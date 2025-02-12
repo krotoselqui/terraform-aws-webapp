@@ -1,0 +1,11 @@
+# Terraform states and caches
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Secrets
+terraform.tfvars
+
+# Log files
+crash.log
+
