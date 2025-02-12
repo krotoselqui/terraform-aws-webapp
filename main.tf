@@ -81,22 +81,28 @@ resource "aws_instance" "web_server" {
 
   user_data = <<-EOF
               #!/bin/bash
+              # Nginxのインストールと起動
               sudo yum update -y
               sudo yum install -y nginx
               sudo systemctl start nginx
               sudo systemctl enable nginx
-              echo "Hello, World!" > /usr/share/nginx/html/index.html
 
               # AWS CLIのインストール
               sudo yum install -y aws-cli
 
-              # S3バケットからファイルを取得するテスト
-              aws s3 cp /usr/share/nginx/html/index.html s3://${aws_s3_bucket.app_bucket.id}/index.html
+              # S3バケットからindex.htmlを取得してnginxのドキュメントルートに配置
+              aws s3 cp s3://${aws_s3_bucket.app_bucket.id}/index.html /usr/share/nginx/html/index.html
+
+              # Nginxの再起動
+              sudo systemctl restart nginx
               EOF
 
   tags = {
     Name = "webapp-server"
   }
+
+  # user_dataが変更された場合にインスタンスを再作成
+  user_data_replace_on_change = true
 }
 
 # セキュリティグループの設定
