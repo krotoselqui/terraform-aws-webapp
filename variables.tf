@@ -4,8 +4,8 @@ variable "key_pair_name" {
     default = "terraform-webapp"
 }
 
-variable "bucket_name" {
-    description = "Name of the S3 bucket to be created. Must be globally unique."
+variable "bucket_prefix" {
+    description = "Prefix for the S3 bucket name. A random suffix will be appended to ensure uniqueness."
     type = string
-    default = "terraform-webapp-bucket-${random_id.suffix.hex}"
+    default = "terraform-webapp-bucket"
 }

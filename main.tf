@@ -5,7 +5,7 @@ resource "random_id" "suffix" {
 
 # S3バケットの作成
 resource "aws_s3_bucket" "app_bucket" {
-  bucket = var.bucket_name
+  bucket = "${var.bucket_prefix}-${random_id.suffix.hex}"
 
   tags = {
     Name = "webapp-bucket"
@@ -91,7 +91,7 @@ resource "aws_instance" "web_server" {
               sudo yum install -y aws-cli
 
               # S3バケットからファイルを取得するテスト
-              aws s3 cp /usr/share/nginx/html/index.html s3://${var.bucket_name}/index.html
+              aws s3 cp /usr/share/nginx/html/index.html s3://${aws_s3_bucket.app_bucket.id}/index.html
               EOF
 
   tags = {
