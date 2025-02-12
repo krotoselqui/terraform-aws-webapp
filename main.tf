@@ -1,8 +1,80 @@
+# ランダムなサフィックスの生成
+resource "random_id" "suffix" {
+  byte_length = 8
+}
+
+# S3バケットの作成
+resource "aws_s3_bucket" "app_bucket" {
+  bucket = var.bucket_name
+
+  tags = {
+    Name = "webapp-bucket"
+  }
+}
+
+# S3バケットのバージョニング設定
+resource "aws_s3_bucket_versioning" "app_bucket_versioning" {
+  bucket = aws_s3_bucket.app_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# EC2用のIAMロール
+resource "aws_iam_role" "ec2_s3_role" {
+  name = "ec2_s3_access_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# S3アクセス用のIAMポリシー
+resource "aws_iam_role_policy" "s3_access_policy" {
+  name = "s3_access_policy"
+  role = aws_iam_role.ec2_s3_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.app_bucket.arn,
+          "${aws_s3_bucket.app_bucket.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+# EC2インスタンスプロファイル
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2_s3_profile"
+  role = aws_iam_role.ec2_s3_role.name
+}
+
+# EC2インスタンス
 resource "aws_instance" "web_server" {
-  ami           = "ami-0b2c21a346f6d9ef6"  # Amazon Linux 2 (us-west-1用)
+  ami           = "ami-03d49b144f3ee2dc4"  # Amazon Linux 2023 AMI (us-west-1用、2025-02-04リリース)
   instance_type = "t2.micro"
 
   key_name = var.key_pair_name
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   associate_public_ip_address = true
@@ -14,6 +86,12 @@ resource "aws_instance" "web_server" {
               sudo systemctl start nginx
               sudo systemctl enable nginx
               echo "Hello, World!" > /usr/share/nginx/html/index.html
+
+              # AWS CLIのインストール
+              sudo yum install -y aws-cli
+
+              # S3バケットからファイルを取得するテスト
+              aws s3 cp /usr/share/nginx/html/index.html s3://${var.bucket_name}/index.html
               EOF
 
   tags = {
